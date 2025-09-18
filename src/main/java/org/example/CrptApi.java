@@ -18,10 +18,8 @@ import java.util.concurrent.locks.Condition;
 
 public class CrptApi {
     // Базовый URL API Честного знака
-    private static final String BASE_URL = "http://<server-name>[:server-port]" +
-            "/api/v2/{extension}/ rollout?omsId={omsId}";
-    // Эндпоинт для создания документа
-    private static final String ENDPOINT = "/documents/create";
+    private static final String BASE_URL = "https://markirovka.sandbox.crptech.ru";
+    private static final String ENDPOINT = "/api/v3/lk/documents/create?pg=water";
 
     // HTTP-клиент для отправки запросов
     private final HttpClient httpClient;
@@ -57,22 +55,29 @@ public class CrptApi {
         bodyMap.put("document", docJson);
         bodyMap.put("signature", signature);
         String bodyJson = gson.toJson(bodyMap);
+        String fullUrl = BASE_URL + ENDPOINT;
+
 
         // Создаем HTTP POST-запрос
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(BASE_URL + ENDPOINT))
+                .uri(URI.create(fullUrl))
                 .header("Content-Type", "application/json; charset=UTF-8")
                 .header("Authorization", authHeader)
+                .header("User-Agent", "JavaClient/1.0" )
                 .POST(HttpRequest.BodyPublishers.ofString(bodyJson, StandardCharsets.UTF_8))
                 .build();
 
-        // Отправляем запрос и получаем ответ
-        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-        // Проверяем статус ответа
-        if (response.statusCode() != 200) {
-            throw new IOException("API error: " + response.statusCode() + " - " + response.body());
+        try {
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            System.out.println("Status: " + response.statusCode()); // для отладки
+            if (response.statusCode() != 200) {
+                throw new IOException("API error: " + response.statusCode() + " - " + response.body());
+            }
+            return response.body();
+        } catch (Exception e) {
+            System.err.println("Request failed: " + e.getMessage());
+            throw e;
         }
-        return response.body();
     }
 
     /**
